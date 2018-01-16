@@ -1,0 +1,56 @@
+---
+title: "Data Products - Leaflet Map"
+author: "Robert Ruiter"
+date: "15 january 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE, fig.path = "fig/")
+```
+
+## Introduction
+
+This project is part of Coursera's Developing Data Products.
+Goal is a webpage which shows an interactive map created with Leaflet.
+
+## Map of trees in the city Haarlem
+
+This map shows documented trees in the city of Haarlem, The Netherlands.
+The data can be found at [open data Haarlem](https://opendata.haarlem.nl/).  
+Zoom in to see the individual trees.
+
+```{r libs}
+# First load required packages:
+library(readr)
+library(dplyr)
+library(tidyr)
+library(leaflet)
+```
+
+```{r readdata}
+# Then get the data:
+url <- "http://wfs.haarlem.nl/ows?service=WFS&version=2.0.0&request=GetFeature&typename=gemeentehaarlem:bor_bomen&outputFormat=csv"
+fname <- "data/bomen.csv"
+
+if(!file.exists(fname)) {
+    # header <- read_lines(url, n_max = 1)
+    # strsplit(header, ",")
+    download.file(url, fname, mode = "wb")
+}
+
+bomen <- read_csv(fname, col_types = "_dci____c") %>% tbl_df()
+bomen$geom <- gsub("POINT ", "", bomen$geom)
+bomen$geom <- gsub("[\\()]", "", bomen$geom)
+bomen <- bomen %>% separate(geom, c("latitude", "longitude"), sep = " ", convert = TRUE)
+```
+
+```{r mapoutput}
+hlm <- bomen %>%
+    leaflet() %>%
+    addTiles() %>%
+    addMarkers(popup = ~paste("Tree name:", name),
+               clusterOptions = markerClusterOptions()) %>%
+    fitBounds(4.60013818740845, 52.3391609191895, 4.68602657318115, 52.4275131225586)
+hlm
+```
